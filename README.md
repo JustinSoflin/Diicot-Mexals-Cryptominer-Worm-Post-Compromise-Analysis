@@ -4,27 +4,15 @@
 
 ## Report Information
 
-**Analyst:** Justin Soflin  
-**Date Completed:** Feb. 04, 2026  
-**Environment:** Cyber Range at LOG(N) Pacific  
-
-**Hosts Investigated:**
-- linux-programmatic-fix-michael  
-- linuxprogrammaticpabon  
-
-**User Context:** root | Unauthorized miner installation & persistence  
-
-**Tools & Data Sources:**
-- Microsoft Defender for Endpoint  
-- Log Analytics Workspaces  
-- KQL  
-- Linux audit logs  
-
-**Scope:**
-- SYSTEM-level execution  
-- Persistence analysis  
-- Malware delivery chain reconstruction  
-- Log tampering assessment  
+- **Analyst:** Justin Soflin  
+- **Date Completed:** Feb. 04, 2026  
+- **Environment Investigated:** Cyber Range at LOG(N) Pacific  
+- **Hosts Investigated:**  
+  - `linux-programmatic-fix-michael`  
+  - `linuxprogrammaticpabon`  
+- **User Context:** root | Unauthorized miner installation & persistence  
+- **Tools & Data Sources:** Microsoft Defender for Endpoint, Log Analytics Workspaces, KQL (Kusto Query Language), Linux audit logs  
+- **Scope:** SYSTEM-level execution, persistence analysis, malware delivery chain reconstruction, log tampering assessment  
 
 ---
 
@@ -48,7 +36,7 @@
 
 ## Executive Summary
 
-The student Linux virtual machine `linux-programmatic-fix-michael` was compromised by an automated cryptocurrency mining malware campaign. The investigation was initiated following a Microsoft Defender for Endpoint alert indicating **Malware or  PUA (Potentially Unwanted Application) Observed**.
+The student Linux virtual machine `linux-programmatic-fix-michael` was compromised by an automated cryptocurrency mining malware campaign. The investigation was initiated following a Microsoft Defender for Endpoint alert indicating **Malware or  PUA (Potentially Unwanted Application)** Observed.
 
 This incident occurred during an active **student lab exercise** in which the **root account password was intentionally set to `root`** to generate alerts during Tenable vulnerability scanning exercises. While expected in a controlled instructional environment, this configuration significantly weakened the system’s security posture and exposed the VM to real-world internet scanning and brute-force activity.
 
@@ -60,14 +48,14 @@ VirusTotal analysis of the recovered binary returned a **46 / 63 detection score
 
 ## Investigation
 
-### Initial Detection: Malware or PUA Observed
+### Initial Detection: Malware or PUA Observed in MDE
 
 - MDE generates alert **Malware or PUA** activity on Linux host
 - Alert correlated with suspicious processes occurring under `root`
 
 <Br>
 
-<img width="1280" height="648" alt="image" src="https://github.com/user-attachments/assets/23305203-e6f9-4434-918b-dd3c6c2dceb1" />
+<img width="1280" height="648" alt="image" src="https://github.com/user-attachments/assets/23305203-e6f9-4434-918b-dd3c6c2dceb1" /> <br>
 
 <br>
 
@@ -77,7 +65,7 @@ VirusTotal analysis of the recovered binary returned a **46 / 63 detection score
    - Suspicious file or content ingress
    - Executable permission added to file or directory
    - Suspicious shell script launched
-- Along with many suspicious commands observed:
+- Along with potentially suspicious commands:
    - `wget` (Remote file download)
    - `curl` (Payload retrieval / C2 communication)
    - `chmod` (Permission modification for execution)
@@ -94,7 +82,7 @@ VirusTotal analysis of the recovered binary returned a **46 / 63 detection score
 
 ### First Look Into Compromised Device
 
-- multiple reconiassance commands observed:
+- Multiple reconiassance commands observed:
    - `la -la` Lists files/directories, including hidden ones (-a) with permissions (-l)
    - `who` Shows logged-in users
    - `cat /etc/resolv.conf` reads contents of /resolv.conf, typically contains DNS resolver configuration
@@ -119,9 +107,28 @@ DeviceProcessEvents
    - A persistent root-level session existed for ~5 days
    - That session repeatedly executed _estimated thousands of_ short-lived binaries
    - Filenames were randomized: `owqtmtieus`, `nwvslhwzwf`, etc.
-   - Execution counts were throttled per binary
+   - Each binary executs for ~5 seconds before writing a new file
    - Activity pattern indicates automation, not human typing
    - Behavior is inconsistent with legitimate admin activity
+ 
+    <Br>
+
+- Files are located at '/usr/bin'
+   - Only root can write to `/usr/bin`
+   - Regular users cannot create files there
+   - It’s considered a protected system directory
+ 
+  <br>
+
+<img width="734" height="391" alt="image" src="https://github.com/user-attachments/assets/5684e222-a1e2-49c1-9704-25df36ce4211" />
+
+<br>
+
+ - Even though the files are presumably the same:
+   - Each SHA256 hash is different
+   - File sizes change slightly
+   - Malware could modify itself purposely to avoid detection
+   - Things like wallet addresses and ports could change within the file
 
 <img width="1184" height="470" alt="image" src="https://github.com/user-attachments/assets/5deb645c-ed6c-4d8c-bbab-548841fd69e9" />
 
@@ -151,11 +158,9 @@ Lab configuration included:
 - **Root password set to `root`**  
 - Expected vulnerability generation in Tenable for followup remediation
 
+**Students are instructed to destroy VM asap when lab is finished** <Br>
+
 <img width="764" height="212" alt="image" src="https://github.com/user-attachments/assets/88779564-9ad3-4531-9fcd-cd627f7525d0" />
-
-<Br>
-
-- Students are instructed to destroy VM asap when lab is finished
 
 <br>
 
@@ -359,7 +364,12 @@ rm -rf .bash_history ~/.bash_history
   
 - `ygljglkjgfg0` is the original parent file to spawn the many randomized file names from the start
   - EX. `tdrbhhtkky`, `omicykvmml`
-  - obfuscated names evade detection/break continuity in logs
+- obfuscated file names:
+  - Avoid hash-based detections
+  - Avoids filename-based detections
+  - Makes IOC-based hunting harder
+
+Prevents defenders from blocking a single file
 - These are clones or secondary payloads:
    - Backdoors
    - Miner binaries
