@@ -62,18 +62,14 @@ VirusTotal analysis of the recovered binary returned a **46 / 63 detection score
 
 ### Initial Detection: Malware or PUA Observed
 
+- MDE generates alert **Malware or PUA** activity on Linux host
+- Alert correlated with suspicious processes occurring under `root`
+
+<Br>
+
 <img width="1280" height="648" alt="image" src="https://github.com/user-attachments/assets/23305203-e6f9-4434-918b-dd3c6c2dceb1" />
 
-The investigation began after Microsoft Defender for Endpoint generated an alert indicating **Malware or PUA** activity on the Linux host. The alert correlated with suspicious file creation and execution behavior occurring under the `root` user context.
-
-This detection prompted analysis of:
-
-- File creation events  
-- Process execution telemetry  
-- Authentication and logon activity  
-- Network-based download behavior  
-
-<img width="1280" height="646" alt="image" src="https://github.com/user-attachments/assets/030f8102-196a-40a7-86d7-a291bb89e4e5" />
+<br>
 
 - MDE mapped a lengthy Process Tree, highlighting several suspicious processes:
    - Suspicious file dropped and launched
@@ -82,11 +78,17 @@ This detection prompted analysis of:
    - Executable permission added to file or directory
    - Suspicious shell script launched
 - Along with many suspicious commands observed:
-   - wget (Remote file download)
-   - curl (Payload retrieval / C2 communication)
-   - chmod (Permission modification for execution)
-   - cron (Persistence via scheduled task, Linux scheduler)
-   - dash (Lightweight shell used to execute scripts)
+   - `wget` (Remote file download)
+   - `curl` (Payload retrieval / C2 communication)
+   - `chmod` (Permission modification for execution)
+   - `cron` (Persistence via scheduled task, Linux scheduler)
+   - `dash` (Lightweight shell used to execute scripts)
+ 
+     <Br>
+
+<img width="1280" height="646" alt="image" src="https://github.com/user-attachments/assets/030f8102-196a-40a7-86d7-a291bb89e4e5" />
+
+<br>
   
 ---
 
@@ -114,8 +116,8 @@ DeviceProcessEvents
 <br>
 
 - What this means:
-   - A persistent root-level session existed for ~48 hours
-   - That session repeatedly executed thousands of short-lived binaries
+   - A persistent root-level session existed for ~5 days
+   - That session repeatedly executed _estimated thousands of_ short-lived binaries
    - Filenames were randomized: `owqtmtieus`, `nwvslhwzwf`, etc.
    - Execution counts were throttled per binary
    - Activity pattern indicates automation, not human typing
@@ -145,22 +147,24 @@ Log Analytics: stores & exposes it
 At the time of compromise, the VM was actively being used for a **student lab exercise** designed to trigger insecure authentication practices for Tenable scans.
 
 Lab configuration included:
-
 - SSH access intentionally exposed  
 - **Root password set to `root`**  
-- Expected vulnerability generation in Tenable
+- Expected vulnerability generation in Tenable for followup remediation
 
-<img width="790" height="274" alt="image" src="https://github.com/user-attachments/assets/d043b7bf-4f49-40da-9512-3ed08265f18c" />
+<img width="764" height="212" alt="image" src="https://github.com/user-attachments/assets/88779564-9ad3-4531-9fcd-cd627f7525d0" />
 
-This configuration mirrors conditions exploited by real-world automated attack campaigns. Multiple external IP addresses attempted authentication across multiple lab VMs, consistent with **opportunistic brute-force activity**.
+<Br>
 
-The successful `root` authentication observed during this investigation is attributed to **external automated intrusion**, not legitimate student activity.
+- Students are instructed to destroy VM asap when lab is finished
+
+<br>
 
 ---
 
 ### Student changes Root password | AHTKzAEv
+
 - Student begins the lab, changing root password to 'root'
-   - `2026-01-30T13:50:32.826013Z` (1:50pm) — /etc/shadow edited by labuser via root (likely a password change)
+   - `2026-01-30T13:50:32.826013Z` — `/etc/shadow` edited by _Labuser_ via root (likely a password change)
    - `2026-01-30T14:02:04.257228Z` ~12 minutes later, first suspicious file `/var/tmp/AHTKzAEv` is created
 
 Within minutes, `AHTKzAEv` and its siblings appear in `/var/tmp` or `/usr/bin` with gibberish names, running as root processes.
@@ -179,11 +183,12 @@ DeviceFileEvents
 
 <Br>
 
--File lifecycle after creation:
-   - 2:02:04 — AHTKzAEv and multiple x.sh files created, initial payload and helper scripts
-   - 2:02:04.957 — retea in /dev/shm created, /dev/shm is shared memory; malware sometimes drops helpers here for fast execution or stealth (RAM-only execution)
-   - 2:02:05 — /root/.ssh/authorized_keys updated Allows persistence via SSH (attacker can log in without a password)
-   - 2:02:05 — /etc/passwd and /etc/shadow updated Confirms the attacker escalated privileges / added backdoors, possibly adding a new root password.
+- File lifecycle after creation:
+   - 2:02:04 — `AHTKzAEv` and multiple `x.sh` files created, initial payload and helper scripts
+   - 2:02:04.957 — `retea` in `/dev/shm` created
+   - `/dev/shm` is shared memory. malware sometimes drops helpers here for fast execution or stealth (RAM-only execution)
+   - 2:02:05 — `/root/.ssh/authorized_keys` updated. Allows persistence via SSH (attacker can log in without a password)
+   - 2:02:05 — `/etc/passwd` and `/etc/shadow` updated. Confirms the attacker escalated privileges / added backdoors, possibly adding a new root password
 - Repeated FileCreated / FileDeleted events for x.sh and AHTKzAEv
    - This pattern suggests execution loops: run the script → collect data → delete temporary files → drop new scripts to continue
    - Deleting files is often to avoid forensic detection
@@ -199,11 +204,37 @@ DeviceFileEvents
 
 <br>
 
+### Malware Injects Password Hash for Root
+
+**Command:** usermod -p ********** root
+   - `usermod` → Linux command used to modify a user account
+   - `-p **********` → Sets the user’s password hash directly (not plaintext)
+   - `root` → The username being modified
+
+- ********** is the masked hash, so you don’t see it
+- By replacing or adding a root hash with its own, malware creates a backdoor
+- Student is still able to log in/won't get booted off
+- 
+ <Br>
+
+ <img width="1151" height="344" alt="image" src="https://github.com/user-attachments/assets/58e42a90-b7db-41a8-b939-cc96f061c592" />
+
+<br>
+
+- This takes place just 12 minutes after student's password change
+- Student wouldn't have had ample time to complete lab before device is compromised
+
+- <br>
+
+<img width="788" height="386" alt="image" src="https://github.com/user-attachments/assets/7adfaba9-8836-42cf-a495-8014fff03e91" />
+
+<br>
+
 ---
 
 ### diicot
 
-- kuak and diicot created in tmp folder shortly after AHTKzAEv
+- `kuak` and `diicot` created in _tmp_ folder shortly after `AHTKzAEv`
    - both files ran long code meant to terminate any existing miners
 <img width="1174" height="342" alt="image" src="https://github.com/user-attachments/assets/2161b4c2-df21-4a20-ba11-47370b34a5cc" />
 
@@ -272,8 +303,8 @@ rm -rf .bash_history ~/.bash_history
 <br>
 
 - `cron` is a built-in Linux utility for scheduling tasks
-   - these cron processes start at: 2026-01-30T14:04:23.447447Z
-   - and go on until: 2026-02-02T22:47:03.418251Z
+   - these cron processes start at: `2026-01-30T14:04:23.447447Z`
+   - and go on until: `2026-02-02T22:47:03.418251Z`
 - these Cron tasks run _every minute_
 - cron drops `.b4nd1d0` into `/var/tmp/`
 - Executes hidden payload
@@ -379,6 +410,14 @@ rm -rf .bash_history ~/.bash_history
 
 <img width="1280" height="644" alt="image" src="https://github.com/user-attachments/assets/37e734b4-a72d-4f33-ac52-817bbc5ea215" />
 
+ <br>
+ 
+- **Observed behaviors from VirusTotal:**  
+  - Cryptocurrency mining  
+  - Process termination of competing miners  
+  - Persistence installation  
+  - Log destruction  
+
 <br>
 
 
@@ -442,23 +481,7 @@ chattr -ia ~/.ssh/authorized_keys
 echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..." > ~/.ssh/authorized_keys  
 chattr +ai ~/.ssh/authorized_keys  
 
-Setting the immutable attribute (`+i`) prevents easy removal and ensures continued access even if credentials are rotated.
-
----
-
-### Malware Validation and Classification
-
-The malicious ELF binary was validated using VirusTotal:
-
-- **Detection score:** 46 / 63  
-- **Classification:** Trojan  
-- **Observed behaviors:**  
-  - Cryptocurrency mining  
-  - Process termination of competing miners  
-  - Persistence installation  
-  - Log destruction  
-
-This confirms the activity represents a **real-world malware compromise**.
+Setting the immutable attribute (`+i`) prevents easy removal and ensures continued access even if credentials are rotated
 
 ---
 
@@ -492,3 +515,8 @@ Microsoft Defender for Endpoint successfully detected the malicious activity, en
 
 109.206.236.18
 Beaconing = the infected machine initiating an outbound connection to an attacker-controlled server.
+
+
+
+- Cyber Range environment was previously targeted by malware, specifically linked to this lab
+- as we will soon see, this VM was compromised 12 minutes after password was updated
