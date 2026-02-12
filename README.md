@@ -1,18 +1,20 @@
-# Cryptominer Worm Analysis | Full-System Linux Compromise
+# Diicot (aka Mexals) Cryptominer Worm Analysis | Full-System Linux Compromise
 
 ---
 
 ## Report Information
 
 - **Analyst:** Justin Soflin  
-- **Date Completed:** Feb. 04, 2026  
-- **Environment Investigated:** Cyber Range at LOG(N) Pacific  
+- **Date Completed:** Feb. 14, 2026  
+- **Environment Investigated:** Cyber Range at LOG(N) Pacific
+- **Malware Campaign Cluster:** Diicot (fka Mexals)
+- **Payload Type:** Cryptomining Worm
 - **Hosts Investigated:**  
   - `linux-programmatic-fix-michael`  
   - `linuxprogrammaticpabon`  
 - **User Context:** root | Unauthorized miner installation & persistence  
 - **Tools & Data Sources:** Microsoft Defender for Endpoint, Log Analytics Workspaces, KQL (Kusto Query Language), Linux audit logs  
-- **Scope:** SYSTEM-level execution, persistence analysis, malware delivery chain reconstruction, log tampering assessment  
+- **Scope:** Full-System Linux compromise, system-level execution, persistence analysis, malware delivery chain reconstruction, log tampering assessment, post compromise 
 
 ---
 
