@@ -217,9 +217,22 @@ DeviceFileEvents
 
 ```
 
-<img width="1035" height="393" alt="image" src="https://github.com/user-attachments/assets/dcc3a47c-84ca-4431-81ed-79a4bed88857" />
+<br>
+
+**109.206.236.18 Beaconing** 
+- Compromised VM initiating outbound connection to attacker-controlled server
+
+  <br>
+
+<img width="806" height="207" alt="image" src="https://github.com/user-attachments/assets/049e3c99-f6de-4ae7-8b63-d7eaa04674b7" />
 
 <br>
+
+<img width="1245" height="802" alt="image" src="https://github.com/user-attachments/assets/40f22064-6942-4bd7-b04e-ab5facf4a3ed" />
+
+<br>
+
+---
 
 ### Malware Injects Password Hash for Root
 
@@ -974,35 +987,3 @@ Miner
 This incident represents a **complete Linux system compromise** performed by automated malware exploiting weak authentication during a student lab exercise. While the insecure configuration was intentional for instructional purposes, it created conditions identical to real-world attack surfaces.
 
 Microsoft Defender for Endpoint successfully detected the malicious activity, enabling investigation and confirmation of compromise. This case highlights how quickly exposed Linux systems can be compromised and reinforces the importance of monitoring persistence mechanisms, binary integrity, and log tampering — even in educational or non-production environments.
-
-
-## Misc
-
-109.206.236.18
-Beaconing = the infected machine initiating an outbound connection to an attacker-controlled server.
-
-<img width="806" height="207" alt="image" src="https://github.com/user-attachments/assets/049e3c99-f6de-4ae7-8b63-d7eaa04674b7" />
-
-<img width="1245" height="802" alt="image" src="https://github.com/user-attachments/assets/40f22064-6942-4bd7-b04e-ab5facf4a3ed" />
-
-CURL IPs
-```kql
-DeviceNetworkEvents
-| where DeviceName contains "fix-michael"
-| where InitiatingProcessFileName contains "curl"
-| where TimeGenerated >= ago(15d)
-| project TimeGenerated, DeviceName, InitiatingProcessFileName, InitiatingProcessCommandLine, RemotePort, RemoteIPType, RemoteIP
-| sort by TimeGenerated asc
-```
-
-<img width="2268" height="477" alt="image" src="https://github.com/user-attachments/assets/e9ed6153-4b81-4090-9b18-8e1fe2dc5462" />
-
-
-
-
-
-
-
-
-
-
