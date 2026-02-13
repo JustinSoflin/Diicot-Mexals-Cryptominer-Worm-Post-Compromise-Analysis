@@ -1,11 +1,11 @@
-# Diicot (aka Mexals) Cryptominer Worm Analysis | Full-System Linux Compromise
+# Diicot _(aka Mexals)_ Cryptominer Worm Analysis | Full System Linux Compromise
 
 ## Report Information
 
 - **Analyst:** Justin Soflin  
 - **Date Completed:** Feb. 14, 2026  
 - **Environment Investigated:** Cyber Range at LOG(N) Pacific
-- **Malware Campaign Cluster:** Diicot (fka Mexals)
+- **Malware Campaign Cluster:** Diicot _(fka Mexals)_
 - **Payload Type:** Cryptomining Worm
 - **Hosts Investigated:**  
   - `linux-programmatic-fix-michael`  
@@ -18,7 +18,7 @@
 
 # Executive Summary
 
-On **January 30, 2026**, a student Linux virtual machine `linux-programmatic-fix-michael` in the Cyber Range environment was fully compromised by an automated crypto-mining malware campaign known as **Diicot (aka Mexals)**. The malware exploited intentionally weak authentication configured for a lab exercise, installing unauthorized software, creating persistent backdoors, and performing reconnaissance.
+On **January 30, 2026**, a student Linux virtual machine `linux-programmatic-fix-michael` in the Cyber Range environment was fully compromised by an automated crypto-mining malware campaign known as **Diicot _(aka Mexals)_**. The malware exploited intentionally weak authentication configured for a lab exercise, installing unauthorized software, creating persistent backdoors, and performing reconnaissance.
 
 Because prior containment measures were implemented following the **initial April 2025 compromise** by the same malware campaign, its activity was limited in scope. The malware attempted to evade detection by clearing logs and obfuscating files, established long-term access, and scanned only the internal network for other targets.
 
@@ -82,11 +82,11 @@ The compromise occurred **less than 15 minutes** after the student updated crede
     <br>
    
 - Along with potentially suspicious commands:
-   - `wget` (Remote file download)
-   - `curl` (Payload retrieval / C2 communication)
-   - `chmod` (Permission modification for execution)
-   - `cron` (Persistence via scheduled task, Linux scheduler)
-   - `dash` (Lightweight shell used to execute scripts)
+   - `wget` _Remote file download_
+   - `curl` _Payload retrieval / C2 communication_
+   - `chmod` _Permission modification for execution_
+   - `cron` _Persistence via scheduled task, Linux scheduler_
+   - `dash` _Lightweight shell used to execute scripts_
  
      <Br>
 
@@ -99,11 +99,11 @@ The compromise occurred **less than 15 minutes** after the student updated crede
 ### First Look Into Compromised Device
 
 - Multiple reconiassance commands observed:
-   - `la -la` Lists files/directories, including hidden ones (-a) with permissions (-l)
-   - `who` Shows logged-in users
-   - `cat /etc/resolv.conf` reads contents of /resolv.conf, typically contains DNS resolver configuration
-   - `uptime` Displays how long the system has been running, number of users, load averages
-   - `cd /etc` hanges the working directory to /etc
+   - `la -la` _Lists files/directories, including hidden ones `-a` with permissions `-l`_
+   - `who` _Shows logged-in users_
+   - `cat /etc/resolv.conf` _reads contents of `/etc/resolv.conf`, typically contains DNS resolver configuration_
+   - `uptime` _Displays how long the system has been running, number of users, load averages_
+   - `cd /etc` _changes the working directory to `/etc` directory_
 
   <Br>
   
@@ -119,17 +119,17 @@ DeviceProcessEvents
 
 <br>
 
-- What this means:
-   - A persistent root-level session existed for ~5 days
+- **What this means:**
+   - A persistent root-level session existed for _~5 days_
    - That session repeatedly executed _estimated thousands of_ short-lived binaries
    - Filenames were randomized: `owqtmtieus`, `nwvslhwzwf`, etc.
-   - Each binary executs for ~5 seconds before writing a new file
+   - Each binary executes for _~5 seconds_ before writing a new file
    - Activity pattern indicates automation, not human typing
    - Behavior is inconsistent with legitimate admin activity
  
     <Br>
 
-- Files are located at '/usr/bin'
+- **Files are located at '/usr/bin'**
    - Only root can write to `/usr/bin`
    - Regular users cannot create files there
    - It’s considered a protected system directory
@@ -154,7 +154,7 @@ DeviceProcessEvents
    - Correlates sessions to file name randomization
    - Logs show **over 15,000** commands linking to the same session for this VM
    - All originating from the same ParentFile `ygljglkjgfg0`
-   - Each command is within milliseconds of each other
+   - Each command is within _milliseconds_ of each other
 
 ```
 Linux kernel:  creates session 79416
@@ -166,9 +166,9 @@ Log Analytics: stores & exposes it
 
 ---
 
-### Authentication Context and Lab Configuration
+### Authentication Lab Context
 
-At the time of compromise, the VM was actively being used for a **student lab exercise** designed to trigger insecure authentication practices for Tenable scans.
+At the time of compromise, the VM was actively being used for a **student lab exercise** designed to intentionally trigger findings for Tenable scans.
 
 <br>
 
@@ -179,13 +179,13 @@ At the time of compromise, the VM was actively being used for a **student lab ex
 Lab configuration included:
 - SSH access intentionally exposed  
 - **Root password set to `root`**  
-- Expected vulnerability generation in Tenable for followup remediation
+- Expected findings in Tenable for followup remediation
 
 <br>
 
 ---
 
-### Student changes Root password | AHTKzAEv
+### Student Password Change & First Compromise Artifact
 
 - Student begins the lab, changing root password to _root_
    - _2026-01-30T`13:50`:32.826013Z_ — `/etc/shadow` edited by _Labuser_ via root (student password change)
@@ -624,8 +624,57 @@ exit $?                                         # Exit script returning last com
 '
 ```
 
+<br>
+
 ---
 
+## Running in Memory for "File-less" Execution
+
+Artifact tracking was hindered by frequent deletions, relocations, and renaming.
+
+```kql
+DeviceProcessEvents
+| where DeviceName contains "fix-michael"
+| where ProcessCommandLine contains "/dev/shm"
+| where ProcessCommandLine !contains "key"
+| where TimeGenerated >= ago(15d)
+| project TimeGenerated, DeviceName, AccountName, ProcessCommandLine
+| sort by TimeGenerated asc
+```
+
+<br>
+
+<img width="843" height="188" alt="image" src="https://github.com/user-attachments/assets/d551cc84-62b4-40e5-894c-6a4591b30c54" />
+
+<br>
+
+- Repeated Commands: `rm -rf`
+   - Intending to remove worm artifacts from memory and temp directories
+   - These are known _DIICOT/Mexals_ artifact names
+
+```
+rm -rf /dev/shm/.x
+rm -rf /root/retea
+rm -rf /tmp/kuak
+rm -rf /tmp/diicot
+rm -rf /tmp/.diicot
+rm -rf /dev/shm/.magic
+rm -rf /dev/shm/retea
+```
+
+<Br>
+
+`grep --color=auto "/dev/shm/kdmtmpflush (deleted)"`
+
+- Actor was searching logs or process output for:`/dev/shm/kdmtmpflush (deleted)`
+   - `/dev/shm` = _RAM-backed filesystem_
+   - `(deleted)` appears when a process is still running but the file backing it has been deleted from disk
+   - Checking whether the in-memory malware was still active
+ 
+     <br>
+
+     ---
+     
 ### Persistence via /etc/init.d
 
 **`ygljglkjgfg0` is created/copied to _/etc/init.d/_** <br>
@@ -969,7 +1018,7 @@ Miner
 <br>
 
 **Cyber Range targeted by malware again** _Jan. 30, 2026_
-- Compromised VM successfully scanned subnet 10.1.0.0/24:22
+- Compromised VM successfully scanned subnet _10.1.0.0/24:22_
    - No outbound scans observed
 
 ---
@@ -978,23 +1027,48 @@ Miner
 
 ### Immediate Recovery
 
-- Redeploy affected virtual machines  
-- Remove unauthorized init scripts  
-- Rotate all credentials and SSH keys  
-- Rebuild systems from trusted images  
+- Destroy affected virtual machines, if not needed for production 
+- Remove unauthorized init scripts, cron jobs, and persistent backdoors  
+- Rotate all credentials, SSH keys, and sensitive configuration secrets  
+- Perform full system integrity verification before returning to production  
+- Isolate and analyze affected VMs before rejoining the network  
 
-### Monitoring Improvements
+### Monitoring & Detection Improvements
 
-- Alert on writes to `/etc/init.d`  
-- Monitor renaming of binaries in `/bin` and `/usr/bin`  
-- Detect log truncation behavior  
-- Alert on modifications to `authorized_keys`  
-- Flag repeated download attempts from single external IPs  
+- Alert on writes to `/etc/init.d`, `/etc/cron.*`, and other startup directories  
+- Monitor renaming or replacement of system binaries in `/bin` and `/usr/bin`  
+- Detect suspicious in-memory execution and frequent deletion/moving of files  
+- Flag repeated downloads from single external IPs or unusual domains  
+- Alert on unauthorized modifications to `authorized_keys` or root password hashes  
+- Track abnormal process spawning patterns, especially short-lived and randomized binaries  
+- Correlate network activity with known attacker infrastructure or brute-force attempts  
+- Maintain visibility on temporary directories like `/tmp` and `/dev/shm` for unexpected executable activity  
+
+ <br>
 
 ---
 
-## Conclusion
+# Conclusion
 
-This incident represents a **complete Linux system compromise** performed by automated malware exploiting weak authentication during a student lab exercise. While the insecure configuration was intentional for instructional purposes, it created conditions identical to real-world attack surfaces.
+This incident represents a **full Linux system compromise** carried out by the automated **Diicot (_aka Mexals_) cryptomining worm**. The malware successfully exploited intentionally weak authentication settings during a student lab exercise, demonstrating how quickly exposed systems can be overtaken when real-world attack conditions are replicated.
 
-Microsoft Defender for Endpoint successfully detected the malicious activity, enabling investigation and confirmation of compromise. This case highlights how quickly exposed Linux systems can be compromised and reinforces the importance of monitoring persistence mechanisms, binary integrity, and log tampering — even in educational or non-production environments.
+Less than **15 minutes** after the root password change, the host was compromised. The attacker achieved root-level execution, deployed obfuscated binaries, established multiple persistence mechanisms, cleared logs, and initiated internal SSH scanning. Although no active cryptominer process was ultimately observed, the malware performed all preparatory actions consistent with staging a mining operation, including terminating any potential competing miners, tuning system limits for maximum resource consumption, and maintaining redundant access paths.
+
+The actor’s heavy use of renaming, deletion, in-memory execution, masking, and unintelligible filenames significantly complicated artifact continuity. This deliberate anti-forensic behavior made linear reconstruction difficult and highlights the operational maturity of the campaign. Microsoft Defender for Endpoint successfully detected malicious behavior early in the attack chain, enabling swift investigation and confirmation of compromise.
+
+Compared to the **April 2025 compromise**, the impact was materially reduced. Updated Network Security Group (NSG) outbound restrictions limited scanning to the internal subnet and prevented broader external propagation. This improved containment posture resulted in no escalations fro Azure Safeguard Team. However, the successful internal SSH probing of demonstrates that additional inbound and lateral movement controls may further reduce risk without disrupting lab functionality, which may be needed as **it seems the campaign continues to actively target the Cyber Range environment.**
+
+<br>
+
+## Key Takeaways
+
+- Exposed systems can be compromised within minutes
+- Weak authentication remains one of the most reliable initial access vectors
+- Cryptomining worms often operate as full frameworks, not just simple miners
+- Defense-in-depth significantly reduces impact
+- Even without sensitive data, compromised systems can be used for malicious purposes
+- Standard protocols alone may not be enough; layered monitoring and defenses are essential
+- Focusing on the broader compromise patterns can be as sufficient as examining every minor malware action
+
+
+
